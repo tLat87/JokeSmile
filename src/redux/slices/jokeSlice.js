@@ -14,9 +14,12 @@ const jokeSlice = createSlice({
         },
         removeJoke: (state, action) => {
             state.list = state.list.filter(joke => joke.id !== action.payload);
+        },
+        deleteAll: (state, action) => {
+            state.list = []
         }
     }
 });
 
-export const { addJoke, removeJoke } = jokeSlice.actions;
+export const { addJoke, removeJoke , deleteAll} = jokeSlice.actions;
 export default jokeSlice.reducer;

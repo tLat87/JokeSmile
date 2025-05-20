@@ -6,13 +6,22 @@ import {
     Switch,
     TouchableOpacity,
     StyleSheet,
-    ImageBackground
+    ImageBackground,
+    Alert
 } from 'react-native';
+import { useDispatch } from 'react-redux';
+import { deleteAll } from '../redux/slices/jokeSlice';
 
 export default function SettingsScreen() {
     const [remindersEnabled, setRemindersEnabled] = useState(true);
+    const dispatch = useDispatch();
 
-    const toggleSwitch = () => setRemindersEnabled(previous => !previous);
+    const toggleSwitch = () => setRemindersEnabled(prev => !prev);
+
+    const handleClearHistory = () => {
+        dispatch(deleteAll());
+        Alert.alert("Success", "You have deleted the entire history.");
+    };
 
     return (
         <ImageBackground
@@ -23,8 +32,7 @@ export default function SettingsScreen() {
             <SafeAreaView style={styles.container}>
                 <Text style={styles.title}>SETTINGS</Text>
 
-
-                <TouchableOpacity style={styles.optionButton}>
+                <TouchableOpacity style={styles.optionButton} onPress={handleClearHistory}>
                     <Text style={styles.optionText}>Clearing history</Text>
                 </TouchableOpacity>
 
@@ -56,16 +64,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 40,
     },
-    optionRow: {
-        borderWidth: 1,
-        borderColor: '#fff',
-        borderRadius: 24,
-        padding: 16,
-        marginBottom: 16,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
     optionButton: {
         borderWidth: 1,
         borderColor: '#fff',
@@ -76,14 +74,5 @@ const styles = StyleSheet.create({
     optionText: {
         color: '#fff',
         fontSize: 16,
-    },
-    switchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    switchLabel: {
-        color: '#0f0',
-        marginLeft: 8,
-        fontWeight: 'bold',
     },
 });
