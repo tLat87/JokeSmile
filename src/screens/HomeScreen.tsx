@@ -1,7 +1,22 @@
 import React, { useState } from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, ScrollView, ImageBackground, Image} from 'react-native';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    ScrollView,
+    ImageBackground,
+    Image
+} from 'react-native';
 
-const jokesData = [
+// Define the type for a single joke item
+type Joke = {
+    text: string;
+    category: string;
+};
+
+// Static list of jokes with categories
+const jokesData: Joke[] = [
     { text: "Life is like a photograph. To get a good picture, sometimes you need to show negativity.", category: 'Life' },
     { text: "What happens if you cross a vampire and a snowman? Frostbite and blood loss at the same time!", category: 'Short Puns' },
     { text: "Love is when you let someone see all your files and they don't put viruses on you.", category: 'Relationships' },
@@ -16,64 +31,68 @@ const jokesData = [
     { text: "Why do scuba divers always dive backwards? So that you don't see the approaching shark with your face!", category: 'Short Puns' },
 ];
 
-const categories = ['Life', 'Work', 'Relationships', 'Short Puns'];
+// List of categories used for filtering
+const categories: string[] = ['Life', 'Work', 'Relationships', 'Short Puns'];
 
-const HomeScreen = () => {
-    const [selectedCategory, setSelectedCategory] = useState(null);
+const HomeScreen: React.FC = () => {
+    // Local state to store selected category
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+    // Filter jokes based on the selected category
     const filteredJokes = selectedCategory
         ? jokesData.filter(joke => joke.category === selectedCategory)
         : jokesData;
 
     return (
         <ImageBackground
-            source={require('../assets/img/0e2dac62064077cb5876e816dbde3e6de782b7dc.png')}
+            source={require('../assets/img/0e2dac62064077cb5876e816dbde3e6de782b7dc.png')} // Background image
             resizeMode="cover"
             style={styles.background}
         >
-        <View style={styles.overlay}>
-            <Text style={styles.header}>JOKE FEED</Text>
-            <View horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
-                {categories.map(category => (
-                    <TouchableOpacity
-                        key={category}
-                        style={[
-                            styles.filterButton,
-                            selectedCategory === category && styles.activeFilter
-                        ]}
-                        onPress={() => setSelectedCategory(category === selectedCategory ? null : category)}
-                    >
-                        <Text style={styles.filterText}>{category}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
+            {/* Overlay with content */}
+            <View style={styles.overlay}>
+                <Text style={styles.header}>JOKE FEED</Text>
 
-            <ScrollView contentContainerStyle={styles.jokesContainer}>
-                {filteredJokes.map((joke, index) => (
-                    <View key={index} style={styles.jokeCard}>
-                        <Text style={styles.jokeText}>{joke.text}</Text>
-                        <Image source={require('../assets/img/Component8.png')} />
-                    </View>
-                ))}
-            </ScrollView>
-        </View>
+                {/* Category filter buttons */}
+                <View style={styles.filterContainer}>
+                    {categories.map((category) => (
+                        <TouchableOpacity
+                            key={category}
+                            style={[
+                                styles.filterButton,
+                                selectedCategory === category && styles.activeFilter
+                            ]}
+                            onPress={() =>
+                                setSelectedCategory(category === selectedCategory ? null : category)
+                            }
+                        >
+                            <Text style={styles.filterText}>{category}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {/* Jokes list */}
+                <ScrollView contentContainerStyle={styles.jokesContainer}>
+                    {filteredJokes.map((joke, index) => (
+                        <View key={index} style={styles.jokeCard}>
+                            <Text style={styles.jokeText}>{joke.text}</Text>
+                            <Image source={require('../assets/img/Component8.png')} />
+                        </View>
+                    ))}
+                </ScrollView>
+            </View>
         </ImageBackground>
     );
 };
 
+// Styles for the HomeScreen layout
 const styles = StyleSheet.create({
-    container: {
-        backgroundColor: '#450000',
-        paddingTop: 60,
-        flex: 1,
-        paddingHorizontal: 16,
-    },
     background: {
         flex: 1,
     },
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0)',
+        // backgroundColor: 'rgba(0, 0, 0, 1)', // Full black overlay
         paddingTop: 60,
         paddingHorizontal: 16,
     },
@@ -109,7 +128,7 @@ const styles = StyleSheet.create({
         paddingBottom: 80,
     },
     jokeCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)', // Light transparent card
         padding: 16,
         flexDirection: 'row',
         borderRadius: 12,
