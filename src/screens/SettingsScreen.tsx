@@ -7,7 +7,7 @@ import {
     TouchableOpacity,
     StyleSheet,
     ImageBackground,
-    Alert
+    Alert, Linking
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { deleteAll } from '../redux/slices/jokeSlice';
@@ -36,7 +36,7 @@ export default function SettingsScreen() {
                     <Text style={styles.optionText}>Clearing history</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.optionButton}>
+                <TouchableOpacity style={styles.optionButton} onPress={()=>{Linking.openURL('')}}>
                     <Text style={styles.optionText}>Privacy Policy and Terms of Use</Text>
                 </TouchableOpacity>
 
