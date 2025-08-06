@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Define interfaces for better type safety
 interface Joke {
     id: string;
     topic: string;
@@ -24,87 +23,24 @@ interface Joke {
 }
 
 interface SavedJoke extends Joke {
-    savedId: string; // Unique ID for the saved instance
+    savedId: string;
 }
 
-// Function to generate a simple random ID
-// This replaces uuidv4 for simplicity and to remove the dependency
 const generateRandomId = (): string => {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 
-// Sample joke data - 10 pre-defined jokes with topic, severity, and advice
 const jokesData: Joke[] = [
-    {
-        id: '1',
-        topic: 'animals',
-        severity: 2,
-        joke: "Why don't scientists trust atoms? Because they make up everything!",
-        advice: "This is a light, witty joke. Perfect for a casual gathering or a family setting. Avoid telling it if someone is deeply discussing atomic theory, it might sound dismissive.",
-    },
-    {
-        id: '2',
-        topic: 'tech',
-        severity: 3,
-        joke: "Why do programmers prefer dark mode? Because light attracts bugs!",
-        advice: "Good for tech-savvy crowds or a friendly office environment. Might not land with non-technical people. Best after a long coding session when everyone's a bit tired.",
-    },
-    {
-        id: '3',
-        topic: 'food',
-        severity: 1,
-        joke: "What do you call a fake noodle? An impasta!",
-        advice: "A harmless, pun-based joke suitable for all ages. Great to lighten the mood during a meal or cooking session.",
-    },
-    {
-        id: '4',
-        topic: 'school',
-        severity: 2,
-        joke: "Why did the scarecrow win an award? Because he was outstanding in his field!",
-        advice: "Classic, gentle humor. Works well in an educational setting or with kids. Avoid if the topic is serious academic performance.",
-    },
-    {
-        id: '5',
-        topic: 'travel',
-        severity: 2,
-        joke: "I told my wife she was drawing her eyebrows too high. She looked surprised.",
-        advice: "A simple wordplay joke. Good for a relaxed atmosphere among friends or family. Probably not suitable in a formal business meeting.",
-    },
-    {
-        id: '6',
-        topic: 'science',
-        severity: 3,
-        joke: "What do you call a sad strawberry? A blueberry.",
-        advice: "A bit silly, but generally inoffensive. Fun for a casual, lighthearted conversation, especially if discussing fruits or colors.",
-    },
-    {
-        id: '7',
-        topic: 'music',
-        severity: 2,
-        joke: "Why did the classic rock band break up? Because they couldn't get their acts together!",
-        advice: "A decent pun for music lovers. Best shared among friends who appreciate music humor. Not for a serious discussion about a band's legacy.",
-    },
-    {
-        id: '8',
-        topic: 'sports',
-        severity: 1,
-        joke: "Why did the football coach go to the bank? To get his quarter back!",
-        advice: "A simple, clean joke about sports. Great for kids or a casual sports discussion. Can be used almost anywhere.",
-    },
-    {
-        id: '9',
-        topic: 'daily life',
-        severity: 2,
-        joke: "I used to be a baker, but I couldn't make enough dough.",
-        advice: "A relatable, lighthearted joke about work/money. Good for a break room or informal chat. Avoid if someone is genuinely struggling financially.",
-    },
-    {
-        id: '10',
-        topic: 'history',
-        severity: 3,
-        joke: "Did you hear about the restaurant on the moon? Great food, no atmosphere.",
-        advice: "A classic space/science pun. Works well in a setting where light, intellectual humor is appreciated. Might be too dry for some.",
-    },
+    { id: '1', topic: 'animals', severity: 2, joke: "Why don't scientists trust atoms? Because they make up everything!", advice: "This is a light, witty joke. Perfect for a casual gathering or a family setting. Avoid telling it if someone is deeply discussing atomic theory, it might sound dismissive." },
+    { id: '2', topic: 'tech', severity: 3, joke: "Why do programmers prefer dark mode? Because light attracts bugs!", advice: "Good for tech-savvy crowds or a friendly office environment. Might not land with non-technical people. Best after a long coding session when everyone's a bit tired." },
+    { id: '3', topic: 'food', severity: 1, joke: "What do you call a fake noodle? An impasta!", advice: "A harmless, pun-based joke suitable for all ages. Great to lighten the mood during a meal or cooking session." },
+    { id: '4', topic: 'school', severity: 2, joke: "Why did the scarecrow win an award? Because he was outstanding in his field!", advice: "Classic, gentle humor. Works well in an educational setting or with kids. Avoid if the topic is serious academic performance." },
+    { id: '5', topic: 'travel', severity: 2, joke: "I told my wife she was drawing her eyebrows too high. She looked surprised.", advice: "A simple wordplay joke. Good for a relaxed atmosphere among friends or family. Probably not suitable in a formal business meeting." },
+    { id: '6', topic: 'science', severity: 3, joke: "What do you call a sad strawberry? A blueberry.", advice: "A bit silly, but generally inoffensive. Fun for a casual, lighthearted conversation, especially if discussing fruits or colors." },
+    { id: '7', topic: 'music', severity: 2, joke: "Why did the classic rock band break up? Because they couldn't get their acts together!", advice: "A decent pun for music lovers. Best shared among friends who appreciate music humor. Not for a serious discussion about a band's legacy." },
+    { id: '8', topic: 'sports', severity: 1, joke: "Why did the football coach go to the bank? To get his quarter back!", advice: "A simple, clean joke about sports. Great for kids or a casual sports discussion. Can be used almost anywhere." },
+    { id: '9', topic: 'daily life', severity: 2, joke: "I used to be a baker, but I couldn't make enough dough.", advice: "A relatable, lighthearted joke about work/money. Good for a break room or informal chat. Avoid if someone is genuinely struggling financially." },
+    { id: '10', topic: 'history', severity: 3, joke: "Did you hear about the restaurant on the moon? Great food, no atmosphere.", advice: "A classic space/science pun. Works well in a setting where light, intellectual humor is appreciated. Might be too dry for some." },
 ];
 
 const STORAGE_KEY = '@joke_generator:saved_jokes';
@@ -116,7 +52,6 @@ const JokeGeneratorScreen: React.FC = () => {
     const [generatedJoke, setGeneratedJoke] = useState<Joke | null>(null);
     const [savedJokes, setSavedJokes] = useState<SavedJoke[]>([]);
 
-    // Load saved jokes from AsyncStorage on component mount
     useEffect(() => {
         loadSavedJokes();
     }, []);
@@ -135,7 +70,6 @@ const JokeGeneratorScreen: React.FC = () => {
 
     const saveJoke = async (jokeToSave: Joke) => {
         try {
-            // Using the simple random ID generator
             const newSavedJoke: SavedJoke = { ...jokeToSave, savedId: generateRandomId() };
             const updatedJokes = [...savedJokes, newSavedJoke];
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedJokes));
@@ -177,13 +111,13 @@ const JokeGeneratorScreen: React.FC = () => {
 
         let candidates = filteredByTopic.filter(
             (joke) => Math.abs(joke.severity - numericSeverity) <= 1
-        ); // +/- 1 severity level
+        );
 
         if (candidates.length === 0 && filteredByTopic.length > 0) {
             candidates = filteredByTopic;
         }
         if (candidates.length === 0) {
-            candidates = jokesData; // Fallback to all jokes if no match
+            candidates = jokesData;
         }
 
         if (candidates.length > 0) {
@@ -207,7 +141,7 @@ const JokeGeneratorScreen: React.FC = () => {
 
     return (
         <ImageBackground
-            source={require('../assets/img/0e2dac62064077cb5876e816dbde3e6de782b7dc.png')} // Background image
+            source={require('../assets/img/0e2dac62064077cb5876e816dbde3e6de782b7dc.png')}
             resizeMode="cover"
             style={styles.background}
         >
@@ -267,7 +201,6 @@ const JokeGeneratorScreen: React.FC = () => {
                         </View>
                     )}
 
-                    {/* --- Saved Jokes Section --- */}
                     {savedJokes.length > 0 && (
                         <>
                             <Text style={styles.savedJokesHeader}>My Saved Jokes</Text>
@@ -276,7 +209,7 @@ const JokeGeneratorScreen: React.FC = () => {
                                 renderItem={renderSavedJokeItem}
                                 keyExtractor={(item) => item.savedId}
                                 contentContainerStyle={styles.savedJokesList}
-                                scrollEnabled={false} // Make parent ScrollView handle overall scroll
+                                scrollEnabled={false}
                             />
                         </>
                     )}
@@ -287,30 +220,19 @@ const JokeGeneratorScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-    background: {
-        flex: 1,
-    },
-    overlay: {
-        flex: 1,
-        paddingTop: 60,
-        paddingHorizontal: 16,
-    },
-    scrollContent: {
-        paddingBottom: 80,
-    },
+    background: { flex: 1 },
+    overlay: { flex: 1, paddingTop: 60, paddingHorizontal: 16 },
+    scrollContent: { paddingBottom: 80 },
     header: {
         fontSize: 70,
         color: '#fff',
         fontWeight: 'bold',
-        fontFamily: 'AmaticSC-Bold', // Ensure this font is loaded
+        fontFamily: 'AmaticSC-Bold',
         alignSelf: 'center',
         marginBottom: 20,
         textAlign: 'center',
     },
-    inputContainer: {
-        marginBottom: 20,
-        width: '100%',
-    },
+    inputContainer: { marginBottom: 20, width: '100%' },
     textInput: {
         backgroundColor: 'rgba(255, 255, 255, 0.15)',
         color: '#fff',
@@ -327,14 +249,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 30,
     },
-    generateButtonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    jokeOutputContainer: {
-        width: '100%',
-    },
+    generateButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+    jokeOutputContainer: { width: '100%' },
     outputTitle: {
         fontSize: 22,
         color: '#fff',
@@ -348,11 +264,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginBottom: 15,
     },
-    jokeText: {
-        color: '#fff',
-        fontSize: 17,
-        lineHeight: 24,
-    },
+    jokeText: { color: '#fff', fontSize: 17, lineHeight: 24 },
     adviceCard: {
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         padding: 18,
@@ -367,18 +279,14 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
     },
     saveButton: {
-        backgroundColor: '#007000', // Green color for save
+        backgroundColor: '#007000',
         paddingVertical: 12,
         borderRadius: 10,
         alignItems: 'center',
         marginTop: 20,
         marginBottom: 30,
     },
-    saveButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
+    saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
     savedJokesHeader: {
         fontSize: 28,
         color: '#fff',
@@ -387,9 +295,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         alignSelf: 'center',
     },
-    savedJokesList: {
-        // FlatList content container styles
-    },
+    savedJokesList: {},
     savedJokeCard: {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
         padding: 15,
@@ -404,23 +310,15 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         marginBottom: 8,
     },
-    savedJokeAdvice: {
-        color: '#eee',
-        fontSize: 13,
-        marginBottom: 10,
-    },
+    savedJokeAdvice: { color: '#eee', fontSize: 13, marginBottom: 10 },
     deleteButton: {
-        backgroundColor: '#a00000', // Red for delete
+        backgroundColor: '#a00000',
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 8,
         alignSelf: 'flex-end',
     },
-    deleteButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
+    deleteButtonText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
 });
 
 export default JokeGeneratorScreen;

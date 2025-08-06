@@ -6,16 +6,18 @@ import {
     StyleSheet,
     ScrollView,
     ImageBackground,
-    Image
+    Image,
+    StyleProp,
+    ViewStyle,
+    TextStyle,
+    ImageStyle,
 } from 'react-native';
 
-// Define the type for a single joke item
 type Joke = {
     text: string;
     category: string;
 };
 
-// Static list of jokes with categories
 const jokesData: Joke[] = [
     { text: "Life is like a photograph. To get a good picture, sometimes you need to show negativity.", category: 'Life' },
     { text: "What happens if you cross a vampire and a snowman? Frostbite and blood loss at the same time!", category: 'Short Puns' },
@@ -31,31 +33,29 @@ const jokesData: Joke[] = [
     { text: "Why do scuba divers always dive backwards? So that you don't see the approaching shark with your face!", category: 'Short Puns' },
 ];
 
-// List of categories used for filtering
 const categories: string[] = ['Life', 'Work', 'Relationships', 'Short Puns'];
 
 const HomeScreen: React.FC = () => {
-    // Local state to store selected category
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-    // Filter jokes based on the selected category
-    const filteredJokes = selectedCategory
+    const filteredJokes: Joke[] = selectedCategory
         ? jokesData.filter(joke => joke.category === selectedCategory)
         : jokesData;
 
     return (
         <ImageBackground
-            source={require('../assets/img/0e2dac62064077cb5876e816dbde3e6de782b7dc.png')} // Background image
+            source={require('../assets/img/0e2dac62064077cb5876e816dbde3e6de782b7dc.png')}
             resizeMode="cover"
             style={styles.background}
         >
-            {/* Overlay with content */}
+            {/* Dark transparent overlay */}
+            <View style={styles.darkOverlay} />
+
             <View style={styles.overlay}>
                 <Text style={styles.header}>JOKE FEED</Text>
 
-                {/* Category filter buttons */}
                 <View style={styles.filterContainer}>
-                    {categories.map((category) => (
+                    {categories.map((category: string) => (
                         <TouchableOpacity
                             key={category}
                             style={[
@@ -71,9 +71,8 @@ const HomeScreen: React.FC = () => {
                     ))}
                 </View>
 
-                {/* Jokes list */}
                 <ScrollView contentContainerStyle={styles.jokesContainer}>
-                    {filteredJokes.map((joke, index) => (
+                    {filteredJokes.map((joke: Joke, index: number) => (
                         <View key={index} style={styles.jokeCard}>
                             <Text style={styles.jokeText}>{joke.text}</Text>
                             <Image source={require('../assets/img/Component8.png')} />
@@ -85,37 +84,56 @@ const HomeScreen: React.FC = () => {
     );
 };
 
-// Styles for the HomeScreen layout
-const styles = StyleSheet.create({
+// Type definitions for styles (optional but helpful in TSX)
+interface Styles {
+    background: StyleProp<ViewStyle>;
+    darkOverlay: StyleProp<ViewStyle>;
+    overlay: StyleProp<ViewStyle>;
+    header: StyleProp<TextStyle>;
+    filterContainer: StyleProp<ViewStyle>;
+    filterButton: StyleProp<ViewStyle>;
+    activeFilter: StyleProp<ViewStyle>;
+    filterText: StyleProp<TextStyle>;
+    jokesContainer: StyleProp<ViewStyle>;
+    jokeCard: StyleProp<ViewStyle>;
+    jokeText: StyleProp<TextStyle>;
+}
+
+const styles = StyleSheet.create<Styles>({
     background: {
         flex: 1,
+        position: 'relative',
+    },
+    darkOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
     },
     overlay: {
         flex: 1,
-        // backgroundColor: 'rgba(0, 0, 0, 1)', // Full black overlay
         paddingTop: 60,
         paddingHorizontal: 16,
     },
     header: {
-        fontSize: 78,
+        fontSize: 64,
         color: '#fff',
         fontWeight: 'bold',
         fontFamily: 'AmaticSC-Bold',
         alignSelf: 'center',
-        marginBottom: 16,
+        marginBottom: 24,
         textAlign: 'center',
     },
     filterContainer: {
         flexDirection: 'row',
-        marginBottom: 16,
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        marginBottom: 20,
     },
     filterButton: {
         backgroundColor: '#700000',
         paddingVertical: 6,
         paddingHorizontal: 14,
         borderRadius: 20,
-        height: 30,
-        marginRight: 10,
+        margin: 6,
     },
     activeFilter: {
         backgroundColor: '#ff5500',
@@ -125,20 +143,21 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     jokesContainer: {
-        paddingBottom: 80,
+        paddingBottom: 100,
     },
     jokeCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)', // Light transparent card
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
         padding: 16,
         flexDirection: 'row',
         borderRadius: 12,
-        marginBottom: 12,
+        marginBottom: 14,
         alignItems: 'center',
     },
     jokeText: {
         color: '#fff',
         width: '85%',
         fontSize: 16,
+        lineHeight: 22,
     },
 });
 
