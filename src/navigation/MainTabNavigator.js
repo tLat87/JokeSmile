@@ -19,18 +19,24 @@ const ICONS = {
 const screenOptions = ({ route }) => ({
     headerShown: false,
     tabBarLabel: '',
-    tabBarIcon: () => (
+    tabBarIcon: ({ focused }) => (
         <Image
             source={ICONS[route.name] || ICONS.Home}
             resizeMode="contain"
+            style={{
+                width: 28,
+                height: 28,
+                tintColor: focused ? '#FF4444' : '#FFFFFF',
+            }}
         />
     ),
     tabBarStyle: {
-
         backgroundColor: '#2C0000',
-
-        paddingTop: 20,
-
+        paddingTop: 10,
+        paddingBottom: 10,
+        height: 70,
+        borderTopWidth: 0,
+        elevation: 5,
     },
     headerTitleStyle: {
         color: 'white',
