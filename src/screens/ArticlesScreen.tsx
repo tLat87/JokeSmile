@@ -1,184 +1,489 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
     TouchableOpacity,
     StyleSheet,
     ScrollView,
-    ImageBackground,
+    StatusBar,
+    Animated,
+    Dimensions,
     Image,
-    ImageSourcePropType,
-    Alert
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
 
-type Joke = {
-    text: string;
-    full: string;
-    img: ImageSourcePropType;
-    locked: boolean;
-    price?: number; // цена открытия
-};
+const { width } = Dimensions.get('window');
 
-type ArticlesScreenProps = {
-    navigation: NativeStackNavigationProp<any>;
-    route: RouteProp<any, any>;
-};
+interface Article {
+    id: string;
+    title: string;
+    excerpt: string;
+    category: string;
+    readTime: string;
+    image: any;
+    isBookmarked: boolean;
+}
 
-const initialJokesData: Joke[] = [
+const articlesData: Article[] = [
     {
-        text: "Why are we laughing? The Science of Humor.",
-        full: 'An article that explains the scientific foundations of humor...',
-        img: require('../assets/img/cb984b7d29e6cc101c50fefd38a3713cbfec60a0.jpg'),
-        locked: false
+        id: '1',
+        title: 'The Art of Timing in Comedy',
+        excerpt: 'Discover how perfect timing can transform a good joke into a great one. Learn the secrets of professional comedians...',
+        category: 'Comedy Tips',
+        readTime: '5 min read',
+        image: require('../assets/img/Component21.png'),
+        isBookmarked: false,
     },
     {
-        text: "Types of humor: from puns to black humor.",
-        full: 'An overview of different styles and types of humor...',
-        img: require('../assets/img/e2356db41b177d9460c9d5f4247eaaba98beeebb.jpg'),
-        locked: true,
-        price: 5
+        id: '2',
+        title: 'Building Your Comedy Routine',
+        excerpt: 'Step-by-step guide to creating a compelling comedy routine that keeps audiences engaged and laughing...',
+        category: 'Performance',
+        readTime: '8 min read',
+        image: require('../assets/img/Component322.png'),
+        isBookmarked: false,
     },
     {
-        text: "Humor in different cultures: what is funny in one country may be offensive in another.",
-        full: 'An exploration of how humor varies across cultures...',
-        img: require('../assets/img/037c1e28cea38eca15fdc1f6819ecc9970d5f7c1.jpg'),
-        locked: true,
-        price: 7
+        id: '3',
+        title: 'Dealing with Hecklers',
+        excerpt: 'Professional strategies for handling difficult audience members while maintaining your composure...',
+        category: 'Stage Presence',
+        readTime: '6 min read',
+        image: require('../assets/img/Component24.png'),
+        isBookmarked: false,
     },
     {
-        text: "How to develop a sense of humor: practical tips and exercises.",
-        full: 'An article with tips on how to improve your sense of humor...',
-        img: require('../assets/img/728886c08bc74051d0409e0136c558d9be63ea1d.jpg'),
-        locked: true,
-        price: 10
+        id: '4',
+        title: 'Writing Jokes That Land',
+        excerpt: 'Master the art of joke writing with proven techniques used by successful comedians worldwide...',
+        category: 'Writing',
+        readTime: '7 min read',
+        image: require('../assets/img/Component25.png'),
+        isBookmarked: false,
     },
     {
-        text: "The history of humor: from antiquity to the present day.",
-        full: 'An overview of the evolution of humor throughout history...',
-        img: require('../assets/img/0fedf3d1861624aa4f32eaa6fdaff1dd1cd0b7e5.jpg'),
-        locked: true,
-        price: 8
-    }
+        id: '5',
+        title: 'The Psychology of Laughter',
+        excerpt: 'Understand what makes people laugh and how to use this knowledge to improve your comedy...',
+        category: 'Theory',
+        readTime: '9 min read',
+        image: require('../assets/img/Component8.png'),
+        isBookmarked: false,
+    },
+    {
+        id: '6',
+        title: 'Marketing Yourself as a Comedian',
+        excerpt: 'Learn how to build your brand and get noticed in the competitive world of comedy...',
+        category: 'Business',
+        readTime: '6 min read',
+        image: require('../assets/img/Component82.png'),
+        isBookmarked: false,
+    },
 ];
 
-const ArticlesScreen: React.FC<ArticlesScreenProps> = ({ navigation }) => {
-    const [jokesData, setJokesData] = useState<Joke[]>(initialJokesData);
-    const [userScore, setUserScore] = useState<number>(0);
+const categories: string[] = ['All', 'Comedy Tips', 'Performance', 'Stage Presence', 'Writing', 'Theory', 'Business'];
+
+const ArticlesScreen: React.FC = () => {
+    const [selectedCategory, setSelectedCategory] = useState<string>('All');
+    const [articles, setArticles] = useState<Article[]>(articlesData);
+    const [bookmarkedArticles, setBookmarkedArticles] = useState<string[]>([]);
+    
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const headerAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        const loadScore = async () => {
-            const storedScore = await AsyncStorage.getItem('userScore');
-            if (storedScore) setUserScore(parseInt(storedScore, 10));
-        };
-        loadScore();
+        // Appearance animation
+        Animated.parallel([
+            Animated.timing(headerAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 1000,
+                delay: 200,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 1000,
+                delay: 200,
+                useNativeDriver: true,
+            }),
+        ]).start();
     }, []);
 
-    const handlePress = (joke: Joke, index: number) => {
-        if (!joke.locked) {
-            navigation.navigate('ArtInfoScreen', { joke });
-            return;
-        }
-
-        // Если статья закрыта — предлагаем купить
-        if (joke.price !== undefined) {
-            Alert.alert(
-                "Article Locked",
-                `Unlock for ${joke.price} points. You have ${userScore} points.`,
-                [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                        text: "Buy",
-                        onPress: async () => {
-                            if (userScore >= (joke.price || 0)) {
-                                const newScore = userScore - (joke.price || 0);
-                                setUserScore(newScore);
-                                await AsyncStorage.setItem('userScore', newScore.toString());
-
-                                const updatedData = [...jokesData];
-                                updatedData[index] = { ...joke, locked: false };
-                                setJokesData(updatedData);
-
-                                Alert.alert("Success", "Article unlocked!");
-                            } else {
-                                Alert.alert("Not enough points", "Take the quiz to earn more!");
-                            }
-                        }
-                    }
-                ]
-            );
-        }
-
+    const toggleBookmark = (articleId: string) => {
+        setBookmarkedArticles(prev => {
+            if (prev.includes(articleId)) {
+                return prev.filter(id => id !== articleId);
+            } else {
+                return [...prev, articleId];
+            }
+        });
+        
+        setArticles(prev => 
+            prev.map(article => 
+                article.id === articleId 
+                    ? { ...article, isBookmarked: !article.isBookmarked }
+                    : article
+            )
+        );
     };
 
-    return (
-        <ImageBackground
-            source={require('../assets/img/0e2dac62064077cb5876e816dbde3e6de782b7dc.png')}
-            resizeMode="cover"
-            style={styles.background}
-        >
-            <View style={styles.overlay}>
-                <Text style={styles.header}>Collection of articles</Text>
-                <Text style={styles.score}>Points: {userScore}</Text>
+    const filteredArticles = selectedCategory === 'All' 
+        ? articles 
+        : articles.filter(article => article.category === selectedCategory);
 
-                <ScrollView contentContainerStyle={styles.jokesContainer}>
-                    {jokesData.map((joke, index) => (
+    const renderArticleCard = (article: Article, index: number) => (
+        <Animated.View
+            key={article.id}
+            style={[
+                styles.articleCard,
+                {
+                    opacity: fadeAnim,
+                    transform: [{ 
+                        translateY: slideAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [50 * (index + 1), 0]
+                        })
+                    }],
+                }
+            ]}
+        >
+            <View style={styles.articleImageContainer}>
+                <Image source={article.image} style={styles.articleImage} resizeMode="cover" />
+                <View style={styles.articleOverlay} />
+                <TouchableOpacity 
+                    style={styles.bookmarkButton} 
+                    onPress={() => toggleBookmark(article.id)}
+                >
+                    <Text style={styles.bookmarkIcon}>
+                        {article.isBookmarked ? '🔖' : '📖'}
+                    </Text>
+                </TouchableOpacity>
+                <View style={styles.categoryBadge}>
+                    <Text style={styles.categoryText}>{article.category}</Text>
+                </View>
+            </View>
+
+            <View style={styles.articleContent}>
+                <View style={styles.articleHeader}>
+                    <Text style={styles.articleTitle} numberOfLines={2}>
+                        {article.title}
+                    </Text>
+                    <Text style={styles.readTime}>{article.readTime}</Text>
+                </View>
+
+                <Text style={styles.articleExcerpt} numberOfLines={3}>
+                    {article.excerpt}
+                </Text>
+
+                <TouchableOpacity style={styles.readMoreButton}>
+                    <Text style={styles.readMoreText}>Read More</Text>
+                    <Text style={styles.readMoreArrow}>→</Text>
+                </TouchableOpacity>
+            </View>
+        </Animated.View>
+    );
+
+    return (
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" backgroundColor="#2C0000" />
+            
+            <Animated.View 
+                style={[
+                    styles.header,
+                    {
+                        opacity: headerAnim,
+                        transform: [{ translateY: headerAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [-50, 0]
+                        })}]
+                    }
+                ]}
+            >
+                <Text style={styles.headerTitle}>Comedy Articles</Text>
+                <Text style={styles.headerSubtitle}>
+                    Learn from the best in the business
+                </Text>
+            </Animated.View>
+
+            <View style={styles.categoriesContainer}>
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoriesScroll}
+                >
+                    {categories.map(category => (
                         <TouchableOpacity
-                            key={index}
-                            style={styles.jokeCard}
-                            onPress={() => handlePress(joke, index)}
+                            key={category}
+                            style={[
+                                styles.categoryButton,
+                                selectedCategory === category && styles.activeCategoryButton
+                            ]}
+                            onPress={() => setSelectedCategory(category)}
                         >
-                            <Text style={styles.jokeText}>
-                                {joke.locked ? `${joke.text} 🔒` : joke.text}
+                            <Text style={[
+                                styles.categoryButtonText,
+                                selectedCategory === category && styles.activeCategoryButtonText
+                            ]}>
+                                {category}
                             </Text>
-                            <Image source={require('../assets/img/Component22.png')} />
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
             </View>
-        </ImageBackground>
+
+            <ScrollView 
+                contentContainerStyle={styles.articlesContainer}
+                showsVerticalScrollIndicator={false}
+            >
+                {filteredArticles.map((article, index) => renderArticleCard(article, index))}
+                
+                {filteredArticles.length === 0 && (
+                    <Animated.View 
+                        style={[
+                            styles.emptyState,
+                            {
+                                opacity: fadeAnim,
+                                transform: [{ scale: fadeAnim }]
+                            }
+                        ]}
+                    >
+                        <Text style={styles.emptyStateIcon}>📚</Text>
+                        <Text style={styles.emptyStateTitle}>No articles found</Text>
+                        <Text style={styles.emptyStateText}>
+                            Try selecting a different category or check back later for new content!
+                        </Text>
+                    </Animated.View>
+                )}
+            </ScrollView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    background: { flex: 1 },
-    overlay: {
+    container: {
         flex: 1,
-        paddingTop: 60,
-        paddingHorizontal: 16,
+        backgroundColor: '#2C0000',
     },
     header: {
-        fontSize: 48,
-        color: '#fff',
+        paddingTop: 60,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+        backgroundColor: 'rgba(44, 0, 0, 0.95)',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E6B34A',
+    },
+    headerTitle: {
+        fontSize: 36,
+        color: '#FFFFFF',
         fontWeight: 'bold',
         fontFamily: 'AmaticSC-Bold',
-        alignSelf: 'center',
-        marginBottom: 8,
         textAlign: 'center',
+        textShadowColor: 'rgba(0, 0, 0, 0.5)',
+        textShadowOffset: { width: 2, height: 2 },
+        textShadowRadius: 5,
+        marginBottom: 8,
     },
-    score: {
-        fontSize: 20,
+    headerSubtitle: {
+        fontSize: 16,
         color: '#E6B34A',
         textAlign: 'center',
-        marginBottom: 16
+        fontWeight: '600',
     },
-    jokesContainer: {
-        paddingBottom: 80,
+    categoriesContainer: {
+        paddingVertical: 20,
+        backgroundColor: 'rgba(74, 4, 4, 0.3)',
+        marginHorizontal: 20,
+        marginTop: 20,
+        borderRadius: 15,
     },
-    jokeCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        borderRadius: 16,
-        padding: 14,
-        marginBottom: 12,
+    categoriesScroll: {
+        paddingHorizontal: 20,
+    },
+    categoryButton: {
+        backgroundColor: 'rgba(106, 5, 5, 0.6)',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 20,
+        marginHorizontal: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(230, 179, 74, 0.2)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 6,
+    },
+    activeCategoryButton: {
+        backgroundColor: 'rgba(230, 179, 74, 0.3)',
+        borderColor: '#E6B34A',
+        borderWidth: 2,
+        transform: [{ scale: 1.05 }],
+    },
+    categoryButtonText: {
+        color: '#E0E0E0',
+        fontSize: 14,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    activeCategoryButtonText: {
+        color: '#E6B34A',
+        fontWeight: 'bold',
+    },
+    articlesContainer: {
+        paddingHorizontal: 20,
+        paddingBottom: 100,
+    },
+    articleCard: {
+        backgroundColor: 'rgba(74, 4, 4, 0.9)',
+        borderRadius: 20,
+        marginBottom: 25,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(230, 179, 74, 0.2)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 15,
+    },
+    articleImageContainer: {
+        position: 'relative',
+        height: 200,
+    },
+    articleImage: {
+        width: '100%',
+        height: '100%',
+        tintColor: '#E6B34A',
+    },
+    articleOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(44, 0, 0, 0.4)',
+    },
+    bookmarkButton: {
+        position: 'absolute',
+        top: 15,
+        right: 15,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        padding: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(230, 179, 74, 0.3)',
+    },
+    bookmarkIcon: {
+        fontSize: 16,
+    },
+    categoryBadge: {
+        position: 'absolute',
+        bottom: 15,
+        left: 15,
+        backgroundColor: 'rgba(230, 179, 74, 0.9)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: '#E6B34A',
+    },
+    categoryText: {
+        color: '#2C0000',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    articleContent: {
+        padding: 20,
+    },
+    articleHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 15,
+    },
+    articleTitle: {
+        flex: 1,
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        lineHeight: 26,
+        marginRight: 15,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 3,
+    },
+    readTime: {
+        fontSize: 12,
+        color: '#E6B34A',
+        fontWeight: '600',
+        backgroundColor: 'rgba(230, 179, 74, 0.1)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(230, 179, 74, 0.2)',
+    },
+    articleExcerpt: {
+        fontSize: 16,
+        color: '#E0E0E0',
+        lineHeight: 22,
+        marginBottom: 20,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 3,
+    },
+    readMoreButton: {
         flexDirection: 'row',
         alignItems: 'center',
+        alignSelf: 'flex-start',
+        backgroundColor: 'rgba(230, 179, 74, 0.2)',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(230, 179, 74, 0.3)',
     },
-    jokeText: {
-        color: '#fff',
-        width: '85%',
+    readMoreText: {
+        color: '#E6B34A',
+        fontSize: 14,
+        fontWeight: '600',
+        marginRight: 8,
+    },
+    readMoreArrow: {
+        color: '#E6B34A',
         fontSize: 16,
+        fontWeight: 'bold',
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+        paddingVertical: 60,
+    },
+    emptyStateIcon: {
+        fontSize: 80,
+        marginBottom: 20,
+    },
+    emptyStateTitle: {
+        fontSize: 24,
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 15,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 3,
+    },
+    emptyStateText: {
+        fontSize: 16,
+        color: '#E0E0E0',
+        textAlign: 'center',
+        lineHeight: 24,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 3,
     },
 });
 

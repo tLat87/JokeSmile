@@ -10,10 +10,9 @@ const Tab = createBottomTabNavigator();
 
 const ICONS = {
     Home: require('../assets/img/Component21.png'),
-    SettingsScreen: require('../assets/img/Component25.png'),
-    MyCollectionScreen: require('../assets/img/Component322.png'),
-    StartScreen: require('../assets/img/Component2323.png'),
-    ArticlesScreen: require('../assets/img/Component24.png'),
+    Start: require('../assets/img/Component2323.png'),
+    Collection: require('../assets/img/Component322.png'),
+    Articles: require('../assets/img/Component24.png'),
 };
 
 const screenOptions = ({ route }) => ({
@@ -49,10 +48,9 @@ const MainTabNavigator = () => {
     return (
         <Tab.Navigator screenOptions={screenOptions}>
             <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="StartScreen" component={StartScreen} />
-            <Tab.Screen name="MyCollectionScreen" component={MyCollectionScreen} />
-            <Tab.Screen name="ArticlesScreen" component={ArticlesScreen} />
-            {/*<Tab.Screen name="SettingsScreen" component={SettingsScreen} />*/}
+            <Tab.Screen name="Start" component={StartScreen} />
+            <Tab.Screen name="Collection" component={MyCollectionScreen} />
+            <Tab.Screen name="Articles" component={ArticlesScreen} />
         </Tab.Navigator>
     );
 };

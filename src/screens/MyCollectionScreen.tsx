@@ -1,243 +1,610 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
     TouchableOpacity,
     StyleSheet,
     ScrollView,
-    ImageBackground,
-    TextInput,
-    Image
+    StatusBar,
+    Animated,
+    Dimensions,
+    Alert,
+    Share,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Define the type for a single roadmap step
-type RoadmapStep = {
-    id: number;
+const { width } = Dimensions.get('window');
+
+interface SavedJoke {
+    id: string;
     text: string;
-    completed: boolean;
-    comment: string;
-    completionDate?: string;
-};
+    category: string;
+    tags: string[];
+    savedAt: string;
+    likes: number;
+}
 
-// Static roadmap data
-const initialRoadmapData: RoadmapStep[] = [
-    { id: 1, text: "Write 50 jokes.", completed: false, comment: '' },
-    { id: 2, text: "Perform at an open mic for the first time.", completed: false, comment: '' },
-    { id: 3, text: "Record your set and review it.", completed: false, comment: '' },
-    { id: 4, text: "Study one hour of stand-up from a professional comedian.", completed: false, comment: '' },
-    { id: 5, text: "Write 10 new minutes of material.", completed: false, comment: '' },
-    { id: 6, text: "Try a new premise or style of joke.", completed: false, comment: '' },
-    { id: 7, text: "Perform at 5 different open mics.", completed: false, comment: '' },
-    { id: 8, text: "Get feedback from another comedian.", completed: false, comment: '' },
-    { id: 9, text: "Revise your set based on feedback.", completed: false, comment: '' },
-    { id: 10, text: "Perform a paid gig.", completed: false, comment: '' },
-    { id: 11, text: "Network with at least 3 bookers or club owners.", completed: false, comment: '' },
-    { id: 12, text: "Create a 15-minute tight set.", completed: false, comment: '' },
-    { id: 13, text: "Produce your own open mic or show.", completed: false, comment: '' },
-    { id: 14, text: "Record a high-quality 20-minute set.", completed: false, comment: '' },
-    { id: 15, text: "Submit a tape to a comedy festival or competition.", completed: false, comment: '' },
-];
+const MyCollectionScreen: React.FC = () => {
+    const [savedJokes, setSavedJokes] = useState<SavedJoke[]>([]);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
 
-const ROADMAP_STORAGE_KEY = '@standup_roadmap';
-
-const RoadmapScreen: React.FC = () => {
-    const [roadmap, setRoadmap] = useState<RoadmapStep[]>(initialRoadmapData);
-    const [editingId, setEditingId] = useState<number | null>(null);
-
-    // Load data from AsyncStorage on component mount
     useEffect(() => {
-        const loadRoadmap = async () => {
-            try {
-                const jsonValue = await AsyncStorage.getItem(ROADMAP_STORAGE_KEY);
-                if (jsonValue != null) {
-                    setRoadmap(JSON.parse(jsonValue));
-                }
-            } catch (e) {
-                console.error("Failed to load roadmap data.", e);
-            }
-        };
-
-        loadRoadmap();
+        loadSavedJokes();
+        
+        // Appearance animation
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+        ]).start();
     }, []);
 
-    // Save data to AsyncStorage whenever the roadmap state changes
-    useEffect(() => {
-        const saveRoadmap = async () => {
-            try {
-                const jsonValue = JSON.stringify(roadmap);
-                await AsyncStorage.setItem(ROADMAP_STORAGE_KEY, jsonValue);
-            } catch (e) {
-                console.error("Failed to save roadmap data.", e);
+    const loadSavedJokes = async () => {
+        try {
+            const storedTags = await AsyncStorage.getItem('userJokeTags');
+            if (storedTags) {
+                const tags = JSON.parse(storedTags);
+                const jokes = Object.keys(tags).map(id => {
+                    const jokeData = getJokeById(id);
+                    return {
+                        id,
+                        text: jokeData.text,
+                        category: jokeData.category,
+                        tags: tags[id] || [],
+                        savedAt: new Date().toISOString(),
+                        likes: jokeData.likes || 0,
+                    };
+                });
+                setSavedJokes(jokes);
             }
-        };
-
-        if (roadmap !== initialRoadmapData) {
-            saveRoadmap();
+        } catch (error) {
+            console.error('Error loading saved jokes:', error);
         }
-    }, [roadmap]);
+    };
 
-    // Function to toggle step completion
-    const toggleCompletion = (id: number) => {
-        setRoadmap(prevRoadmap =>
-            prevRoadmap.map(step =>
-                step.id === id
-                    ? {
-                        ...step,
-                        completed: !step.completed,
-                        completionDate: !step.completed ? new Date().toISOString() : undefined,
+    const getJokeById = (id: string) => {
+        // Here should be logic to get joke by ID
+        // For demo purposes returning a placeholder
+        return {
+            text: "Sample joke text",
+            category: "General",
+            likes: 0,
+        };
+    };
+
+    const removeJokeFromCollection = (jokeId: string) => {
+        Alert.alert(
+            'Remove Joke',
+            'Are you sure you want to remove this joke from your collection?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                    text: 'Remove', 
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const storedTags = await AsyncStorage.getItem('userJokeTags');
+                            if (storedTags) {
+                                const tags = JSON.parse(storedTags);
+                                delete tags[jokeId];
+                                await AsyncStorage.setItem('userJokeTags', JSON.stringify(tags));
+                                setSavedJokes(prev => prev.filter(joke => joke.id !== jokeId));
+                            }
+                        } catch (error) {
+                            console.error('Error removing joke:', error);
+                        }
                     }
-                    : step
-            )
+                }
+            ]
         );
     };
 
-    // Function to handle comment changes
-    const handleCommentChange = (id: number, newComment: string) => {
-        setRoadmap(prevRoadmap =>
-            prevRoadmap.map(step =>
-                step.id === id ? { ...step, comment: newComment } : step
-            )
+    const shareJoke = async (joke: SavedJoke) => {
+        try {
+            await Share.share({
+                message: `${joke.text}\n\nShared from JokeSmile collection! 😄`,
+                title: 'Check out this joke!',
+            });
+        } catch (error) {
+            console.error('Error sharing joke:', error);
+        }
+    };
+
+    const getAllTags = () => {
+        const tags = new Set<string>();
+        savedJokes.forEach(joke => {
+            joke.tags.forEach(tag => tags.add(tag));
+        });
+        return Array.from(tags);
+    };
+
+    const filteredJokes = savedJokes.filter(joke => {
+        const matchesSearch = joke.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            joke.category.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesTags = selectedTags.length === 0 || 
+                           selectedTags.some(tag => joke.tags.includes(tag));
+        return matchesSearch && matchesTags;
+    });
+
+    const toggleTag = (tag: string) => {
+        setSelectedTags(prev => 
+            prev.includes(tag) 
+                ? prev.filter(t => t !== tag)
+                : [...prev, tag]
         );
     };
+
+    const clearFilters = () => {
+        setSelectedTags([]);
+        setSearchQuery('');
+    };
+
+    const renderJokeCard = (joke: SavedJoke, index: number) => (
+        <Animated.View
+            key={joke.id}
+            style={[
+                viewMode === 'grid' ? styles.jokeCardGrid : styles.jokeCardList,
+                {
+                    opacity: fadeAnim,
+                    transform: [{ translateY: slideAnim }],
+                }
+            ]}
+        >
+            <View style={styles.jokeHeader}>
+                <View style={styles.jokeMeta}>
+                    <Text style={styles.jokeCategory}>{joke.category}</Text>
+                    <Text style={styles.jokeDate}>
+                        {new Date(joke.savedAt).toLocaleDateString()}
+                    </Text>
+                </View>
+                <View style={styles.jokeActions}>
+                    <TouchableOpacity 
+                        style={styles.actionButton} 
+                        onPress={() => shareJoke(joke)}
+                    >
+                        <Text style={styles.actionIcon}>📤</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        style={[styles.actionButton, styles.deleteButton]} 
+                        onPress={() => removeJokeFromCollection(joke.id)}
+                    >
+                        <Text style={styles.actionIcon}>🗑️</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            <Text style={styles.jokeText} numberOfLines={viewMode === 'grid' ? 3 : undefined}>
+                {joke.text}
+            </Text>
+
+            <View style={styles.tagsContainer}>
+                {joke.tags.map(tag => (
+                    <View key={tag} style={styles.tag}>
+                        <Text style={styles.tagText}>{tag}</Text>
+                    </View>
+                ))}
+            </View>
+
+            <View style={styles.jokeFooter}>
+                <Text style={styles.likesText}>❤️ {joke.likes}</Text>
+                <Text style={styles.savedText}>💾 Saved</Text>
+            </View>
+        </Animated.View>
+    );
 
     return (
-        <ImageBackground
-            source={require('../assets/img/0e2dac62064077cb5876e816dbde3e6de782b7dc.png')} // Background image
-            resizeMode="cover"
-            style={styles.background}
-        >
-            <View style={styles.overlay}>
-                <Text style={styles.header}>STAND-UP ROADMAP</Text>
-                <ScrollView contentContainerStyle={styles.roadmapContainer}>
-                    {roadmap.map((step) => (
-                        <View key={step.id} style={styles.stepCard}>
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" backgroundColor="#2C0000" />
+            
+            <Animated.View 
+                style={[
+                    styles.header,
+                    {
+                        opacity: fadeAnim,
+                        transform: [{ translateY: slideAnim }]
+                    }
+                ]}
+            >
+                <Text style={styles.headerTitle}>My Collection</Text>
+                <Text style={styles.headerSubtitle}>
+                    {savedJokes.length} saved jokes
+                </Text>
+            </Animated.View>
+
+            <View style={styles.controlsContainer}>
+                <View style={styles.searchContainer}>
+                    <Text style={styles.searchIcon}>🔍</Text>
+                    <Text style={styles.searchPlaceholder}>
+                        {searchQuery || 'Search in collection...'}
+                    </Text>
+                </View>
+
+                <View style={styles.viewToggle}>
+                    <TouchableOpacity
+                        style={[
+                            styles.toggleButton,
+                            viewMode === 'grid' && styles.activeToggleButton
+                        ]}
+                        onPress={() => setViewMode('grid')}
+                    >
+                        <Text style={[
+                            styles.toggleText,
+                            viewMode === 'grid' && styles.activeToggleText
+                        ]}>
+                            Grid
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[
+                            styles.toggleButton,
+                            viewMode === 'list' && styles.activeToggleButton
+                        ]}
+                        onPress={() => setViewMode('list')}
+                    >
+                        <Text style={[
+                            styles.toggleText,
+                            viewMode === 'list' && styles.activeToggleText
+                        ]}>
+                            List
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {getAllTags().length > 0 && (
+                <View style={styles.tagsFilterContainer}>
+                    <ScrollView 
+                        horizontal 
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.tagsFilterScroll}
+                    >
+                        {getAllTags().map(tag => (
                             <TouchableOpacity
-                                style={styles.stepHeader}
-                                onPress={() => toggleCompletion(step.id)}
+                                key={tag}
+                                style={[
+                                    styles.filterTag,
+                                    selectedTags.includes(tag) && styles.activeFilterTag
+                                ]}
+                                onPress={() => toggleTag(tag)}
                             >
-                                <View
-                                    style={[
-                                        styles.checkbox,
-                                        step.completed && styles.checkedCheckbox,
-                                    ]}
-                                >
-                                    {step.completed && (
-                                        <Image
-                                            source={require('../assets/img/Component8.png')}
-                                            style={styles.checkIcon}
-                                        />
-                                    )}
-                                </View>
-                                <Text
-                                    style={[
-                                        styles.stepText,
-                                        step.completed && styles.completedText,
-                                    ]}
-                                >
-                                    {step.text}
+                                <Text style={[
+                                    styles.filterTagText,
+                                    selectedTags.includes(tag) && styles.activeFilterTagText
+                                ]}>
+                                    {tag}
                                 </Text>
                             </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                    {selectedTags.length > 0 && (
+                        <TouchableOpacity style={styles.clearFiltersButton} onPress={clearFilters}>
+                            <Text style={styles.clearFiltersText}>Clear</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
 
-                            {step.completed && step.completionDate && (
-                                <Text style={styles.completionDate}>
-                                    Completed: {new Date(step.completionDate).toLocaleDateString()}
-                                </Text>
-                            )}
-
-                            <TextInput
-                                style={styles.commentInput}
-                                placeholder="Add a comment..."
-                                placeholderTextColor="#ccc"
-                                value={step.comment}
-                                onChangeText={(text) => handleCommentChange(step.id, text)}
-                                multiline
-                            />
-                        </View>
-                    ))}
+            {savedJokes.length === 0 ? (
+                <Animated.View 
+                    style={[
+                        styles.emptyState,
+                        {
+                            opacity: fadeAnim,
+                            transform: [{ scale: fadeAnim }]
+                        }
+                    ]}
+                >
+                    <Text style={styles.emptyStateIcon}>📚</Text>
+                    <Text style={styles.emptyStateTitle}>Your collection is empty</Text>
+                    <Text style={styles.emptyStateText}>
+                        Start saving jokes to build your personal humor library!
+                    </Text>
+                </Animated.View>
+            ) : (
+                <ScrollView 
+                    contentContainerStyle={[
+                        styles.jokesContainer,
+                        viewMode === 'grid' && styles.jokesGrid
+                    ]}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {filteredJokes.map((joke, index) => renderJokeCard(joke, index))}
                 </ScrollView>
-            </View>
-        </ImageBackground>
+            )}
+        </View>
     );
 };
 
-// Styles for the RoadmapScreen layout
 const styles = StyleSheet.create({
-    background: {
+    container: {
         flex: 1,
-    },
-    overlay: {
-        flex: 1,
-        paddingTop: 60,
-        paddingHorizontal: 16,
+        backgroundColor: '#2C0000',
     },
     header: {
-        fontSize: 78,
-        color: '#fff',
+        paddingTop: 60,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+        backgroundColor: 'rgba(44, 0, 0, 0.95)',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E6B34A',
+    },
+    headerTitle: {
+        fontSize: 36,
+        color: '#FFFFFF',
         fontWeight: 'bold',
         fontFamily: 'AmaticSC-Bold',
-        alignSelf: 'center',
-        marginBottom: 16,
         textAlign: 'center',
+        textShadowColor: 'rgba(0, 0, 0, 0.5)',
+        textShadowOffset: { width: 2, height: 2 },
+        textShadowRadius: 5,
+        marginBottom: 8,
     },
-    roadmapContainer: {
-        paddingBottom: 80,
+    headerSubtitle: {
+        fontSize: 16,
+        color: '#E6B34A',
+        textAlign: 'center',
+        fontWeight: '600',
     },
-    stepCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 12,
+    controlsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: 'rgba(74, 4, 4, 0.3)',
+        marginHorizontal: 20,
+        marginTop: 20,
+        borderRadius: 15,
     },
-    stepHeader: {
+    searchContainer: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
+        backgroundColor: 'rgba(106, 5, 5, 0.5)',
+        borderRadius: 20,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        marginRight: 15,
     },
-    checkbox: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: '#fff',
-        marginRight: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    checkedCheckbox: {
-        backgroundColor: '#ff5500',
-        borderColor: '#ff5500',
-    },
-    checkIcon: {
-        width: 16,
-        height: 16,
-        tintColor: '#fff',
-    },
-    stepText: {
-        color: '#fff',
+    searchIcon: {
         fontSize: 16,
+        marginRight: 8,
+    },
+    searchPlaceholder: {
+        color: '#E0E0E0',
+        fontSize: 14,
         flex: 1,
     },
-    completedText: {
-        textDecorationLine: 'line-through',
-        color: 'rgba(255, 255, 255, 0.5)',
+    viewToggle: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(106, 5, 5, 0.5)',
+        borderRadius: 20,
+        padding: 4,
     },
-    commentInput: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        color: '#fff',
-        borderRadius: 8,
-        padding: 10,
+    toggleButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 16,
+    },
+    activeToggleButton: {
+        backgroundColor: '#E6B34A',
+    },
+    toggleText: {
+        color: '#E0E0E0',
         fontSize: 14,
-        marginTop: 5,
-        minHeight: 40,
+        fontWeight: '600',
     },
-    completionDate: {
-        color: 'rgba(255, 255, 255, 0.7)',
-        fontSize: 12,
-        marginTop: -5,
+    activeToggleText: {
+        color: '#2C0000',
+        fontWeight: 'bold',
+    },
+    tagsFilterContainer: {
+        paddingHorizontal: 20,
+        marginTop: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    tagsFilterScroll: {
+        paddingRight: 15,
+    },
+    filterTag: {
+        backgroundColor: 'rgba(106, 5, 5, 0.6)',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(230, 179, 74, 0.2)',
+    },
+    activeFilterTag: {
+        backgroundColor: 'rgba(230, 179, 74, 0.3)',
+        borderColor: '#E6B34A',
+    },
+    filterTagText: {
+        color: '#E0E0E0',
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    activeFilterTagText: {
+        color: '#E6B34A',
+        fontWeight: 'bold',
+    },
+    clearFiltersButton: {
+        backgroundColor: 'rgba(230, 179, 74, 0.2)',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#E6B34A',
+    },
+    clearFiltersText: {
+        color: '#E6B34A',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+    },
+    emptyStateIcon: {
+        fontSize: 80,
+        marginBottom: 20,
+    },
+    emptyStateTitle: {
+        fontSize: 24,
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 15,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 3,
+    },
+    emptyStateText: {
+        fontSize: 16,
+        color: '#E0E0E0',
+        textAlign: 'center',
+        lineHeight: 24,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 3,
+    },
+    jokesContainer: {
+        paddingHorizontal: 20,
+        paddingBottom: 100,
+    },
+    jokesGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+    },
+    jokeCardGrid: {
+        width: (width - 50) / 2,
+        backgroundColor: 'rgba(74, 4, 4, 0.9)',
+        padding: 15,
+        borderRadius: 20,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(230, 179, 74, 0.2)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        elevation: 12,
+    },
+    jokeCardList: {
+        backgroundColor: 'rgba(74, 4, 4, 0.9)',
+        padding: 20,
+        borderRadius: 20,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(230, 179, 74, 0.2)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        elevation: 12,
+    },
+    jokeHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+    },
+    jokeMeta: {
+        flex: 1,
+    },
+    jokeCategory: {
+        backgroundColor: 'rgba(230, 179, 74, 0.2)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        color: '#E6B34A',
+        fontSize: 11,
+        fontWeight: '600',
+        borderWidth: 1,
+        borderColor: 'rgba(230, 179, 74, 0.3)',
+        alignSelf: 'flex-start',
         marginBottom: 5,
-        marginLeft: 36,
+    },
+    jokeDate: {
+        color: '#B0B0B0',
+        fontSize: 11,
+        fontWeight: '500',
+    },
+    jokeActions: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    actionButton: {
+        padding: 6,
+        borderRadius: 8,
+        backgroundColor: 'rgba(106, 5, 5, 0.6)',
+    },
+    deleteButton: {
+        backgroundColor: 'rgba(220, 53, 69, 0.6)',
+    },
+    actionIcon: {
+        fontSize: 14,
+    },
+    jokeText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        lineHeight: 22,
+        marginBottom: 15,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 3,
+    },
+    tagsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 15,
+    },
+    tag: {
+        backgroundColor: 'rgba(122, 9, 9, 0.8)',
+        borderRadius: 12,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        marginRight: 6,
+        marginBottom: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(230, 179, 74, 0.3)',
+    },
+    tagText: {
+        color: '#E6B34A',
+        fontSize: 10,
+        fontWeight: '600',
+    },
+    jokeFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    likesText: {
+        color: '#E0E0E0',
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    savedText: {
+        color: '#E6B34A',
+        fontSize: 12,
+        fontWeight: '600',
     },
 });
 
-export default RoadmapScreen;
+export default MyCollectionScreen;
